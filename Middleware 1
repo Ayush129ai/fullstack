@@ -1,0 +1,112 @@
+const express = require('express');
+const app = express();
+const port = 3000;
+
+// --- Custom Middleware Functions ---
+
+/**
+ * 1. Logging Middleware: Logs method, URL, and timestamp for every request.
+ */
+const requestLogger = (req, res, next) => {
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] ${req.method} ${req.originalUrl}`);
+    next();
+};
+
+/**
+ * 2. Authentication Middleware: Checks for a specific Bearer token.
+ * Only requests with 'Bearer mysecrettoken' are allowed.
+ */
+const tokenAuthenticator = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    const requiredToken = 'mysecrettoken';
+
+    // 1. Check if the Authorization header exists
+    if (!authHeader) {
+        return res.status(401).json({ 
+            error: 'Access Denied', 
+            message: 'No Authorization header provided. Please use Bearer token.' 
+        });
+    }
+
+    // 2. Check if the header format is 'Bearer <token>'
+    const [scheme, token] = authHeader.split(' ');
+
+    if (scheme !== 'Bearer' || !token) {
+        return res.status(401).json({ 
+            error: 'Access Denied', 
+            message: 'Invalid Authorization format. Expected: Bearer <token>' 
+        });
+    }
+
+    // 3. Check if the token is the correct secret
+    if (token === requiredToken) {
+        // Token is correct, proceed to the route handler
+        console.log('Authentication successful for protected route.');
+        next();
+    } else {
+        // Token is incorrect
+        return res.status(403).json({ 
+            error: 'Forbidden', 
+            message: 'Invalid token provided.' 
+        });
+    }
+};
+
+// --- Application Setup ---
+
+// Apply the logging middleware globally to ALL routes
+app.use(requestLogger);
+
+// Basic JSON body parser (optional, but good practice)
+app.use(express.json());
+
+
+// --- Routes ---
+
+/**
+ * Public Route: Accessible without any authentication.
+ */
+app.get('/public', (req, res) => {
+    res.json({ 
+        message: 'Welcome to the public area!', 
+        access: 'Public access granted' 
+    });
+});
+
+/**
+ * Protected Route: Requires the tokenAuthenticator middleware.
+ */
+app.get('/protected', tokenAuthenticator, (req, res) => {
+    res.json({ 
+        message: 'You have successfully accessed the protected data!', 
+        access: 'Authorized access granted' 
+    });
+});
+
+/**
+ * Fallback route for 404
+ */
+app.use((req, res) => {
+    res.status(404).json({ 
+        error: 'Not Found', 
+        message: `Route ${req.originalUrl} not found.` 
+    });
+});
+
+
+// --- Start Server ---
+app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
+    console.log('----------------------------------------------------');
+    console.log('Test Instructions:');
+    console.log('1. Public Route (Open in browser or curl):');
+    console.log('   $ curl http://localhost:3000/public');
+    console.log('2. Protected Route (Correct Token):');
+    console.log('   $ curl -H "Authorization: Bearer mysecrettoken" http://localhost:3000/protected');
+    console.log('3. Protected Route (Missing Token/Header):');
+    console.log('   $ curl http://localhost:3000/protected');
+    console.log('4. Protected Route (Wrong Token):');
+    console.log('   $ curl -H "Authorization: Bearer wrongtoken" http://localhost:3000/protected');
+    console.log('----------------------------------------------------');
+});
