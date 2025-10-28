@@ -1,0 +1,157 @@
+##############################################################
+# STEP 1: BACKEND SETUP - Node.js + Express
+##############################################################
+
+# File: backend/server.js
+const express = require("express");
+const cors = require("cors");
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+// Simple API route
+app.get("/api", (req, res) => {
+  res.json({ message: "Hello from Express backend!" });
+});
+
+// Port
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+
+# ------------------------------
+# Terminal commands for backend
+# ------------------------------
+# mkdir backend && cd backend
+# npm init -y
+# npm install express cors
+# node server.js   # Test locally
+
+##############################################################
+# STEP 2: FRONTEND SETUP - React
+##############################################################
+
+# File: frontend/src/App.js
+import React, { useEffect, useState } from "react";
+
+function App() {
+  const [data, setData] = useState("");
+
+  useEffect(() => {
+    fetch("http://YOUR_BACKEND_IP_OR_ALB/api")
+      .then((res) => res.json())
+      .then((json) => setData(json.message))
+      .catch((err) => console.error(err));
+  }, []);
+
+  return (
+    <div style={{ textAlign: "center", marginTop: "50px" }}>
+      <h2>🌍 Full Stack App</h2>
+      <p>{data || "Loading..."}</p>
+    </div>
+  );
+}
+
+export default App;
+
+# ------------------------------
+# Terminal commands for frontend
+# ------------------------------
+# npx create-react-app frontend
+# cd frontend
+# npm run build   # Production build
+
+##############################################################
+# STEP 3: DOCKER SETUP (Optional) - Multi-Stage Build
+##############################################################
+
+# File: Dockerfile (root of project)
+# Stage 1: Build React App
+FROM node:20 AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+
+# Stage 2: Serve with Nginx
+FROM nginx:1.27-alpine
+COPY --from=build /app/frontend/build /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+
+# File: .dockerignore
+node_modules
+build
+.git
+.gitignore
+Dockerfile
+.dockerignore
+README.md
+npm-debug.log
+
+# ------------------------------
+# Terminal commands for Docker
+# ------------------------------
+# docker build -t my-fullstack-app .
+# docker run -d -p 3000:80 my-fullstack-app
+# Visit http://localhost:3000
+
+##############################################################
+# STEP 4: AWS DEPLOYMENT
+##############################################################
+
+# 1️⃣ Launch Backend EC2 Instances (2+)
+# - Amazon Linux 2
+# - Security Group: Allow 22 (SSH) & 5000 (backend)
+# - User Data:
+#!/bin/bash
+yum update -y
+curl -sL https://rpm.nodesource.com/setup_20.x | bash -
+yum install -y nodejs git
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
+cd YOUR_REPO/backend
+npm install
+npm install -g pm2
+pm2 start server.js
+pm2 startup
+pm2 save
+
+# 2️⃣ Launch Frontend EC2 Instance
+# - Amazon Linux 2
+# - Security Group: Allow 22 (SSH) & 80 (HTTP)
+# - User Data:
+#!/bin/bash
+yum update -y
+yum install -y nginx git
+systemctl start nginx
+systemctl enable nginx
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
+cd YOUR_REPO/frontend
+npm install
+npm run build
+cp -r build/* /usr/share/nginx/html/
+
+# 3️⃣ Setup AWS Application Load Balancer (ALB)
+# - Type: Application Load Balancer
+# - Listener: HTTP 80
+# - Target Group: Backend EC2s on port 5000
+# - Health Check: /api
+# - Security Groups: Allow HTTP 80 from anywhere, backend instances only allow ALB SG
+
+# 4️⃣ Update frontend API URL
+# File: frontend/src/App.js
+# fetch("http://YOUR_ALB_DNS/api")
+
+# 5️⃣ (Optional) Route 53
+# - Create A-record pointing to ALB
+# - Frontend domain points to frontend EC2
+
+##############################################################
+# STEP 5: TESTING
+##############################################################
+
+# 1️⃣ Visit frontend EC2 public IP or domain
+# 2️⃣ The React app loads and calls backend via ALB
+# 3️⃣ Refresh multiple times to see load balancing in action
+# 4️⃣ Backend response can include instance ID to verify traffic distribution
