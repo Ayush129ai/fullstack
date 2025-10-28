@@ -1,0 +1,86 @@
+# ===============================
+# 📁 Project structure (example)
+# ===============================
+# my-react-app/
+# ├── public/
+# ├── src/
+# ├── package.json
+# ├── package-lock.json
+# ├── Dockerfile
+# └── .dockerignore
+#
+# Run the following commands inside the "my-react-app" directory
+# ===============================
+
+
+# ---------- Dockerfile ----------
+cat > Dockerfile <<'EOF'
+# ---------- Stage 1: Build the React app ----------
+FROM node:20 AS build
+
+# Set working directory inside the container
+WORKDIR /app
+
+# Copy package files and install dependencies
+COPY package*.json ./
+RUN npm install
+
+# Copy all project files into the container
+COPY . .
+
+# Build the React app for production
+RUN npm run build
+
+
+# ---------- Stage 2: Serve with Nginx ----------
+FROM nginx:1.27-alpine
+
+# Copy built files from Stage 1 into Nginx's public directory
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Expose port 80
+EXPOSE 80
+
+# Start Nginx server
+CMD ["nginx", "-g", "daemon off;"]
+EOF
+
+
+# ---------- .dockerignore ----------
+cat > .dockerignore <<'EOF'
+node_modules
+build
+.git
+.gitignore
+Dockerfile
+.dockerignore
+README.md
+npm-debug.log
+EOF
+
+
+# ===============================
+# 🧱 Build the Docker image
+# ===============================
+docker build -t my-react-app .
+
+# ===============================
+# ▶️ Run the container
+# ===============================
+docker run -d -p 3000:80 my-react-app
+
+# ===============================
+# 🌐 Test in browser
+# ===============================
+# Visit http://localhost:3000
+#
+# You should see your React app running,
+# served by Nginx inside the container.
+# ===============================
+
+# ===============================
+# 🔍 Check image size
+# ===============================
+docker images my-react-app
+# Expect a compact size (~120–150MB)
+# ===============================
