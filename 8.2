@@ -1,0 +1,89 @@
+import React, { useState } from "react";
+
+function LoginForm() {
+  // State variables for username, password, and error message
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  // Handle form submission
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    // Basic validation
+    if (!username.trim() || !password.trim()) {
+      setError("Please fill in both fields.");
+      return;
+    }
+
+    // Clear error and log data
+    setError("");
+    console.log("Username:", username);
+    console.log("Password:", password);
+
+    // Optionally, reset fields after submit
+    setUsername("");
+    setPassword("");
+  };
+
+  return (
+    <div style={styles.container}>
+      <h2>🔐 Login Form</h2>
+      <form onSubmit={handleSubmit} style={styles.form}>
+        <input
+          type="text"
+          placeholder="Username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          style={styles.input}
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          style={styles.input}
+        />
+        {error && <p style={styles.error}>{error}</p>}
+        <button type="submit" style={styles.button}>
+          Login
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// Simple inline styles for a clean look
+const styles = {
+  container: {
+    textAlign: "center",
+    marginTop: "50px",
+    fontFamily: "Arial, sans-serif",
+  },
+  form: {
+    display: "inline-block",
+    textAlign: "left",
+  },
+  input: {
+    display: "block",
+    marginBottom: "10px",
+    padding: "10px",
+    width: "250px",
+    fontSize: "16px",
+  },
+  button: {
+    width: "100%",
+    padding: "10px",
+    backgroundColor: "#007bff",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+  },
+  error: {
+    color: "red",
+    marginBottom: "10px",
+  },
+};
+
+export defaul
